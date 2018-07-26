@@ -23,24 +23,76 @@ The domain controller is setup on Ubuntu using Samba 4.
 
 This will launch and provision the Domain Controller.
 
-For the purposes of testing, `configure-pdc.sh` script will disable `server require strong auth` which forces BIND over SSL, and disable Password Complexity:
+For the purposes of testing, `configure-pdc.sh` script will:
+
+* Disable `server require strong auth` which forces BIND over SSL:
 
 ```
 sed -i "/\[global\]/a\\\tldap server require strong auth = no" /etc/samba/smb.conf
+```
+
+* Disable Password Complexity:
+
+```
 samba-tool domain passwordsettings set --complexity=off --history-length=0 --min-pwd-age=0 --max-pwd-age=0
 ```
 
+# LDAP Example (Assuming GPDB can resolve greemplum.local) #
+
 * **Create A User:** 
-  * `sudo samba-tool user add <username> <password>`
+  * `sudo samba-tool user add samba changeme`
 
 * **Enable The User Account:** 
-  * `sudo samba-tool user enable <username>`
+  * `sudo samba-tool user enable samba`
 
-* **List users:** 
-  * `sudo samba-tool user list`
+* **Test Simple Bind:** 
+```
+ldapsearch -x -h greenplum.local -b "dc=greenplum,dc=local" -D "CN=samba,CN=users,DC=greenplum,DC=local" -w changeme "(samAccountName=samba)" dn
+ 
+# extended LDIF
+#
+# LDAPv3
+# base <dc=greenplum,dc=local> with scope subtree
+# filter: (samAccountName=samba)
+# requesting: dn
+#
 
-* **Test Access:** 
-  * `ldapsearch -x -h greenplum.local -b "dc=greenplum,dc=local" -D "CN=<username>,CN=users,DC=greenplum,DC=local" -w <password> "(objectclass=person)"`
+# samba, Users, greenplum.local
+dn: CN=samba,CN=Users,DC=greenplum,DC=local
+
+# search reference
+ref: ldap://greenplum.local/CN=Configuration,DC=greenplum,DC=local
+
+# search reference
+ref: ldap://greenplum.local/DC=DomainDnsZones,DC=greenplum,DC=local
+
+# search reference
+ref: ldap://greenplum.local/DC=ForestDnsZones,DC=greenplum,DC=local
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 5
+# numEntries: 1
+# numReferences: 3
+```
+  
+
+* **Modify pg_hba.conf**
+
+```
+host     all         samba     0.0.0.0/0        ldap ldapserver=greenplum.local ldapprefix="cn=" ldapsuffix=",cn=users,dc=greenplum,dc=local"
+
+gpstop -u
+
+20180725:03:54:38:027412 gpstop:gpdb:gpadmin-[INFO]:-Signalling all postmaster processes to reload
+...
+[gpadmin@gpdb ~]$ psql -U samba -h gpdb
+Password for user samba:
+psql (8.2.15)
+Type "help" for help.
+```
 
 # Cleanup #
 
