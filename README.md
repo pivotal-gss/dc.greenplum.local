@@ -30,13 +30,17 @@ sed -i "/\[global\]/a\\\tldap server require strong auth = no" /etc/samba/smb.co
 samba-tool domain passwordsettings set --complexity=off --history-length=0 --min-pwd-age=0 --max-pwd-age=0
 ```
 
-**Create A User:** `sudo samba-tool user add <username> <password>`
+**Create A User:** 
+`sudo samba-tool user add <username> <password>`
 
-**Enable The User Account:** `sudo samba-tool user enable <username>`
+**Enable The User Account:** 
+`sudo samba-tool user enable <username>`
 
-**List users:** `sudo samba-tool user list`
+**List users:** 
+`sudo samba-tool user list`
 
-**Test Access:** `ldapsearch -x -h greenplum.local -b "dc=greenplum,dc=local" -D "CN=<username>,CN=users,DC=greenplum,DC=local" -w <password> "(objectclass=person)"`
+**Test Access:** 
+`ldapsearch -x -h greenplum.local -b "dc=greenplum,dc=local" -D "CN=<username>,CN=users,DC=greenplum,DC=local" -w <password> "(objectclass=person)"`
 
 # Cleanup #
 
