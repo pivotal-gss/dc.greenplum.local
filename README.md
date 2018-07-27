@@ -37,7 +37,10 @@ sed -i "/\[global\]/a\\\tldap server require strong auth = no" /etc/samba/smb.co
 samba-tool domain passwordsettings set --complexity=off --history-length=0 --min-pwd-age=0 --max-pwd-age=0
 ```
 
-# LDAP Example (Assuming GPDB can resolve greemplum.local) #
+# Greenplum LDAP Example #
+
+Your gpdb instance will need to be able to resolve the domain controller (default: 192.168.99.10 greenplum.local)
+If you are having trouble resolving, make sure your VirtualBox network adapter is correct (default: vboxnet0).
 
 * **Create A User:** 
   * `sudo samba-tool user add samba changeme`
@@ -46,6 +49,9 @@ samba-tool domain passwordsettings set --complexity=off --history-length=0 --min
   * `sudo samba-tool user enable samba`
 
 * **Test Simple Bind:** 
+
+ldapsearch is included with the OpenLDAP Clients
+
 ```
 ldapsearch -x -h greenplum.local -b "dc=greenplum,dc=local" -D "CN=samba,CN=users,DC=greenplum,DC=local" -w changeme "(samAccountName=samba)" dn
  
@@ -77,7 +83,6 @@ result: 0 Success
 # numEntries: 1
 # numReferences: 3
 ```
-  
 
 * **Modify pg_hba.conf**
 
@@ -93,6 +98,41 @@ Password for user samba:
 psql (8.2.15)
 Type "help" for help.
 ```
+
+# Greenplum Kerberos Example #
+
+* **Modify krb5.conf:** 
+
+```
+# Configuration snippets may be placed in this directory as well
+includedir /etc/krb5.conf.d/
+
+[logging]
+ default = FILE:/var/log/krb5libs.log
+ kdc = FILE:/var/log/krb5kdc.log
+ admin_server = FILE:/var/log/kadmind.log
+
+[libdefaults]
+ dns_lookup_realm = false
+ ticket_lifetime = 24h
+ renew_lifetime = 7d
+ forwardable = true
+ rdns = false
+ default_realm = GREENPLUM.LOCAL
+ default_ccache_name = KEYRING:persistent:%{uid}
+
+[realms]
+ GREENPLUM.LOCAL = {
+  kdc = greenplum.local
+  admin_server = greenplum.local
+ }
+
+[domain_realm]
+ .greenplum.local = GREENPLUM.LOCAL
+ greenplum.local = GREENPLUM.LOCAL
+ ```
+ 
+ 
 
 # Cleanup #
 
