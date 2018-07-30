@@ -159,7 +159,11 @@ Type "help" for help.
 
 # Greenplum Kerberos Example #
 
-When you set up the Greenplum Database environment by sourcing the greenplum-db_path.sh script, the LD_LIBRARY_PATH environment variable is set to include the Greenplum Database lib directory, which includes Kerberos libraries. This may cause Kerberos utility commands such as kinit and klist to fail due to version conflicts. The solution is to run Kerberos utilities before you source the greenplum-db_path.sh file or temporarily unset the LD_LIBRARY_PATH variable when you execute Kerberos utilities
+When you set up the Greenplum Database environment by sourcing the greenplum-db_path.sh script, the LD_LIBRARY_PATH environment variable is set to include the Greenplum Database lib directory, which includes Kerberos libraries. 
+
+This may cause Kerberos utility commands such as kinit and klist to fail due to version conflicts. 
+
+The solution is to run Kerberos utilities before you source the greenplum-db_path.sh file or temporarily unset the LD_LIBRARY_PATH variable when you execute Kerberos utilities.
 
 ```
 [gpadmin@gpdb ~]$ klist
