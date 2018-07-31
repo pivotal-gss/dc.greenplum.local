@@ -18,19 +18,19 @@ The domain controller is setup on Ubuntu using Samba 4.
 
 # Usage #
 
-1. Clone this repository.
-2. Run `vagrant up`. 
+- [ ] Clone this repository.
+- [ ] Run `vagrant up`. 
 
 This will launch and provision the Domain Controller.
 For the purposes of testing, `configure-pdc.sh` script will:
 
-* Disable `server require strong auth` which forces BIND over SSL:
+  * Disable `server require strong auth` which forces BIND over SSL:
 
 ```
 sed -i "/\[global\]/a\\\tldap server require strong auth = no" /etc/samba/smb.conf
 ```
 
-* Disable Password Complexity:
+  * Disable Password Complexity:
 
 ```
 samba-tool domain passwordsettings set --complexity=off --history-length=0 --min-pwd-age=0 --max-pwd-age=0
@@ -41,13 +41,13 @@ samba-tool domain passwordsettings set --complexity=off --history-length=0 --min
 Your gpdb instance will need to be able to resolve the domain controller (default: 192.168.99.10 greenplum.local)
 If you are having trouble resolving, make sure your VirtualBox network adapter is correct (default: vboxnet0).
 
-1. Create An LDAP Bind User: 
+- [ ] Create An LDAP Bind User: 
   * `sudo samba-tool user add samba changeme`
 
-2. Enable The User Account: 
+- [ ] Enable The User Account: 
   * `sudo samba-tool user enable samba`
 
-3. Test Simple Bind: 
+- [ ] Test Simple Bind: 
 
 ldapsearch is included with the OpenLDAP Clients
 
@@ -83,7 +83,7 @@ result: 0 Success
 # numReferences: 3
 ```
 
-4. Modify pg_hba.conf
+- [ ] Modify pg_hba.conf
 
 ```
 host     all         samba     0.0.0.0/0        ldap ldapserver=greenplum.local ldapprefix="cn=" ldapsuffix=",cn=users,dc=greenplum,dc=local"
@@ -100,15 +100,15 @@ Type "help" for help.
 
 # Greenplum LDAP SEARCH+BIND Example #
 
-1. Complete Steps 1-3 For BIND Example
+- [ ] Complete Steps For BIND Example
 
-2. Create SEARCH LDAP Account:
+- [ ] Create SEARCH LDAP Account:
   * `sudo samba-tool user add gpadmin changeme`
 
-3. Enable The User Account: 
+- [ ] Enable The User Account: 
   * `sudo samba-tool user enable gpadmin`
 
-4. Test Simple Bind: 
+- [ ] Test Simple Bind: 
 
 ```
 ldapsearch -x -h greenplum.local -b "dc=greenplum,dc=local" -D "CN=samba,CN=users,DC=greenplum,DC=local" -w changeme "(samAccountName=samba)" dn
@@ -142,7 +142,7 @@ result: 0 Success
 # numReferences: 3
 ```
 
-5. **Modify pg_hba.conf**
+- [ ] Modify pg_hba.conf
 
 ```
 host     all         samba     0.0.0.0/0        ldap ldapserver=greenplum.local ldapbasedn="cn=users,dc=greenplum,dc=local" ldabbindnd="cn=gpadmin,cn=users,dc=greenplum,dc=local" ldapbindpasswd="changeme" ldapsearchattribute="samAccountName"
@@ -172,10 +172,12 @@ klist: relocation error: klist: symbol krb5_is_config_principal, version krb5_3_
 export LD_LIBRARY_PATH=/lib64:$LD_LIBRARY_PATH
 ```
 
-1. Generate a Service Principal Name (SPN) on the DC: 
+- [ ] Generate a Service Principal Name (SPN) on the DC: 
 
 Active directory requires Kerberos service principal names to be mapped to a user account before a keytab can be generated. 
 Be sure to match the service name with the krb_srvname.
+
+Note with SAMBA AD, it's not necessary to add the realm when adding an SPN; it is automatically included.
 
 ```
 # Create the Account
@@ -219,7 +221,7 @@ sudo scp krb5.keytab gpadmin@gpdb:~
 ```
 
 
-2. Modify Greenplum krb5.conf: 
+- [ ] Modify Greenplum krb5.conf: 
 
 In this example, I have only modifed the REALM information from the default /etc/krb5.conf --
 
@@ -252,7 +254,7 @@ includedir /etc/krb5.conf.d/
  greenplum.local = GREENPLUM.LOCAL
  ```
 
-3. Modify pg_hba.conf
+- [ ] Modify pg_hba.conf
 
 Remember that the FIRST matching rule prevails...
 
@@ -296,6 +298,148 @@ See: https://gpdb.docs.pivotal.io/540/install_guide/prep_os_install_gpdb.html#to
 ```
 [gpadmin@gpdb ~]$ psql -U samba -h gpdb
 psql: Kerberos 5 authentication rejected:  Clock skew too great
+```
+
+# Greenplum Command Center Kerberos Example #
+
+- [ ] Create a SPN for GPCC
+
+In this example, we will bind the SPN to the gpmon account.
+If you need to combine keytabs (gpcc and gpdb), use `ktutil` to read all and write a new one.
+
+```
+sudo samba-tool user add gpmon changeme
+sudo samba-tool user enable gpmon
+sudo samba-tool spn add HTTP/gpdb gpmon
+sudo samba-tool spn list gpmon
+
+User CN=gpmon,CN=Users,DC=greenplum,DC=local has the following servicePrincipalName:
+	 HTTP/gpdb
+
+sudo samba-tool domain exportkeytab --principal="HTTP/gpdb" krb5.gpcc.keytab
+
+# Combining Keytabs
+
+sudo ktutil
+ktutil:  rkt krb5.keytab
+ktutil:  rkt krb5.gpcc.keytab
+ktutil:  list
+slot KVNO Principal
+---- ---- ---------------------------------------------------------------------
+   1    1            postgres/gpdb@GREENPLUM.LOCAL
+   2    1            postgres/gpdb@GREENPLUM.LOCAL
+   3    1            postgres/gpdb@GREENPLUM.LOCAL
+   4    1                HTTP/gpdb@GREENPLUM.LOCAL
+   5    1                HTTP/gpdb@GREENPLUM.LOCAL
+   6    1                HTTP/gpdb@GREENPLUM.LOCAL
+
+ktutil:  wkt krb5.keytab
+
+# Replace the Greenplum Keytab
+sudo scp krb5.keytab gpadmin@gpdb:~/krb5.keytab
+```
+- [ ] Update the pg_hba.conf
+
+You can have local authentication as trust or continue to use the .pgpass file with md5 authenticaiton.
+If you want gpmon to run with kerberos, we will need to authenticate and continue setup.
+
+https://gpcc.docs.pivotal.io/430/topics/gpmon.html
+
+```
+local    gpperfmon   gpmon     			md5 # Local Uses SOCKETS and will always use .pgpass or 
+host     all         gpmon     127.0.0.1/28 	md5 
+host     all         gpmon     ::1/128      	md5
+host     all         gpmon     0.0.0.0/0       gss include_realm=0
+```
+
+- [ ] Kerberos Enable GPCC 
+
+See: 
+https://gpcc.docs.pivotal.io/330/gpcc/topics/kerberos.html -- or --
+https://gpcc.docs.pivotal.io/430/topics/kerberos.html
+
+The syntax to enable kerberos on an existing installation will be different depnding on the major version.
+
+```
+gpcmdr --krbenable gpcc_43210_333_20180718130238
+Stopping instance gpcc_43210_333_20180718130238...
+Done.
+==========================================================
+
+Requirements for using Kerberos with GPCC:
+
+  1. RedHat Linux 5.10 or 6+ (Centos 5 and SLES are not supported)
+  2. /etc/krb5.conf file is the same as on the Kerberos server
+  3. Greenplum database must already be configured for Kerberos
+
+Confirm webserver name, IP, or DNS from keytab file.
+
+For example, if the HTTP principal in your keytab file is HTTP/gpcc.example.com@KRB.EXAMPLE.COM,
+enter "gpcc.example.com".
+
+Enter webserver name for this instance: (default=gpdb)
+gpdb
+
+Enter the name of GPDB kerberos service name: (default=postgres)
+
+
+GPCC supports 3 different kerberos mode:
+1. Normal mode: If keytab file provided contains the login user's key entry, GPCC will run queries as the login user. Otherwise, GPCC will run all queries as gpmon user.
+2. Strict mode: If keytab file doesn't contain the login user's key entry, the user won't be able to login.
+3. Gpmon Only mode: The keytab file can only contain service keys, no user's key entry is needed in keytab file. Only gpmon ticket need to be obtained in GPCC server machine before GPCC runs, and refresh before expiration.
+
+
+Choose kerberos mode (1.normal/2.strict/3.gpmon_only): (default=1)
+
+
+Enter path to the keytab file: (default=/home/gpadmin/krb5.keytab)
+
+
+Start instance Yy/Nn (default=Y)
+
+Kerberos enabled for instance gpcc_43210_333_20180718130238
+Starting instance gpcc_43210_333_20180718130238 ...
+```
+
+- [ ] Authenticate and Test Access
+
+SPNEGO Support on various browsers and OSes may require some addtional startup parameters or tuning.
+
+For Example on MacOS:
+
+* Safari works out of the box if you've created a Kerberos ticket as outlined in step 1; 
+* FireFox just needs a couple settings configured on the about:config page.
+* Chrome -- well, it's just special...
+
+Configure Chrome's whitelist to allow authentication against any domains you will be using (along with the domain you used with kinit above). In the Terminal, run the following commands:
+$ defaults write com.google.Chrome AuthServerWhitelist “*.example.com”
+$ defaults write com.google.Chrome AuthNegotiateDelegateWhitelist “*.example.com”
+
+Check with: `chrome://policy`
+
+```
+gpstop -u
+kdestroy
+kinit gpmon
+Password for gpmon@GREENPLUM.LOCAL:
+
+[gpadmin@gpdb ~]$ psql -U gpmon -h gpdb
+psql (8.2.15)
+Type "help" for help.
+
+# On Host ensure resolution to Guest VMs
+192.168.99.100 gpdb
+192.168.99.10  greenplum.local
+
+# Keytab and krb5.conf copied locally
+kinit -t krb5.gpmon.keytab gpmon@GREENPLUM.LOCAL
+klist
+Credentials cache: API:E5134DFE-7329-4840-A28C-C01B1E6C3D3A
+        Principal: gpmon@GREENPLUM.LOCAL
+
+  Issued                Expires               Principal
+Jul 31 11:40:44 2018  Jul 31 21:40:44 2018  krbtgt/GREENPLUM.LOCAL@GREENPLUM.LOCAL
+
 ```
 
 # Cleanup #
