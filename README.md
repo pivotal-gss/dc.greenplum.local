@@ -409,13 +409,14 @@ For Example on MacOS:
 
 * Safari works out of the box if you've created a Kerberos ticket as outlined in step 1; 
 * FireFox just needs a couple settings configured on the about:config page.
-* Chrome -- well, it's just special...
+* Chrome -- well, it's just special...I have not been able to configure it for hostname only support yet...
 
-Configure Chrome's whitelist to allow authentication against any domains you will be using (along with the domain you used with kinit above). In the Terminal, run the following commands:
-$ defaults write com.google.Chrome AuthServerWhitelist “*.example.com”
-$ defaults write com.google.Chrome AuthNegotiateDelegateWhitelist “*.example.com”
-
-Check with: `chrome://policy`
+  * https://www.chromium.org/developers/design-documents/http-authentication
+  * defaults write com.google.Chrome AuthServerWhitelist “*.example.com”
+  * defaults write com.google.Chrome AuthNegotiateDelegateWhitelist “*.example.com”
+  * defaults write com.google.Chrome DisableAuthNegotiateCnameLookup -bool true
+  * `chrome://policy` and refresh
+  
 
 ```
 gpstop -u
