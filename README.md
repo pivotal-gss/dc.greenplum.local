@@ -48,8 +48,7 @@ If you are having trouble resolving, make sure your VirtualBox network adapter i
   * `sudo samba-tool user enable samba`
 
 - [ ] Test Simple Bind: 
-
-ldapsearch is included with the OpenLDAP Clients
+  * ldapsearch is included with the OpenLDAP Clients
 
 ```
 ldapsearch -x -h greenplum.local -b "dc=greenplum,dc=local" -D "CN=samba,CN=users,DC=greenplum,DC=local" -w changeme "(samAccountName=samba)" dn
@@ -174,10 +173,9 @@ export LD_LIBRARY_PATH=/lib64:$LD_LIBRARY_PATH
 
 - [ ] Generate a Service Principal Name (SPN) on the DC: 
 
-Active directory requires Kerberos service principal names to be mapped to a user account before a keytab can be generated. 
-Be sure to match the service name with the krb_srvname.
-
-Note with SAMBA AD, it's not necessary to add the realm when adding an SPN; it is automatically included.
+  * Active directory requires Kerberos service principal names to be mapped to a user account before a keytab can be generated. 
+  * Be sure to match the service name with the krb_srvname.
+  * Note with SAMBA AD, it's not necessary to add the realm when adding an SPN; it is automatically included.
 
 ```
 # Create the Account
@@ -223,7 +221,7 @@ sudo scp krb5.keytab gpadmin@gpdb:~
 
 - [ ] Modify Greenplum krb5.conf: 
 
-In this example, I have only modifed the REALM information from the default /etc/krb5.conf --
+  * In this example, I have only modifed the REALM information from the default /etc/krb5.conf --
 
 ```
 # Configuration snippets may be placed in this directory as well
@@ -256,7 +254,7 @@ includedir /etc/krb5.conf.d/
 
 - [ ] Modify pg_hba.conf
 
-Remember that the FIRST matching rule prevails...
+  * Remember *the FIRST matching rule prevails...*
 
 ```
 # Edit pg_hba.conf
@@ -265,8 +263,6 @@ host     all         samba     0.0.0.0/0        krb5 include_realm=0
 
 # Reload Configuration
 gpstop -u
-
-20180725:03:54:38:027412 gpstop:gpdb:gpadmin-[INFO]:-Signalling all postmaster processes to reload
 
 # Authenticate to kerberos 
 kdestroy
@@ -279,7 +275,7 @@ Default principal: samba@GREENPLUM.LOCAL
 
 Valid starting       Expires              Service principal
 07/30/2018 17:57:13  07/31/2018 03:57:13  krbtgt/GREENPLUM.LOCAL@GREENPLUM.LOCAL
-	renew until 08/06/2018 17:57:10
+
 
 # Login to Postgres
 [gpadmin@gpdb ~]$ psql -U samba -h gpdb
@@ -288,24 +284,12 @@ psql (8.2.15)
 Type "help" for help.
 ```
 
-**Dealing With Clock Skew**
-It is important that system times on the Active Directory and Greenplum servers not be more than 5 minutes apart. It is suggested that you use Network Time Protocol (NTP) to keep the server times in sync. 
-
-On the Greenplum master you can configure this through /etc/ntp.conf, but keep in mind that the master system clock must also be synced with all of the segment hosts.
-
-See: https://gpdb.docs.pivotal.io/540/install_guide/prep_os_install_gpdb.html#topic_qst_s5t_wy
-
-```
-[gpadmin@gpdb ~]$ psql -U samba -h gpdb
-psql: Kerberos 5 authentication rejected:  Clock skew too great
-```
-
 # Greenplum Command Center Kerberos Example #
 
 - [ ] Create a SPN for GPCC
 
-In this example, we will bind the SPN to the gpmon account.
-If you need to combine keytabs (gpcc and gpdb), use `ktutil` to read all and write a new one.
+  * In this example, we will bind the SPN to the gpmon account.
+  * If you need to combine keytabs (gpcc and gpdb), use `ktutil` to read all and write a new one.
 
 ```
 sudo samba-tool user add gpmon changeme
@@ -338,12 +322,11 @@ ktutil:  wkt krb5.keytab
 # Replace the Greenplum Keytab
 sudo scp krb5.keytab gpadmin@gpdb:~/krb5.keytab
 ```
+
 - [ ] Update the pg_hba.conf
 
-You can have local authentication as trust or continue to use the .pgpass file with md5 authenticaiton.
-If you want gpmon to run with kerberos, we will need to authenticate and continue setup.
-
-https://gpcc.docs.pivotal.io/430/topics/gpmon.html
+  * You can have local authentication as trust or md5 to continue to use the .pgpass file with md5 authenticaiton.
+  * See: https://gpcc.docs.pivotal.io/430/topics/gpmon.html
 
 ```
 local    gpperfmon   gpmon     			md5 # Local Uses SOCKETS and will always use .pgpass or 
@@ -354,11 +337,9 @@ host     all         gpmon     0.0.0.0/0       gss include_realm=0
 
 - [ ] Kerberos Enable GPCC 
 
-See: 
-https://gpcc.docs.pivotal.io/330/gpcc/topics/kerberos.html -- or --
-https://gpcc.docs.pivotal.io/430/topics/kerberos.html
-
-The syntax to enable kerberos on an existing installation will be different depnding on the major version.
+  * See: https://gpcc.docs.pivotal.io/330/gpcc/topics/kerberos.html -- or --
+  * https://gpcc.docs.pivotal.io/430/topics/kerberos.html
+  * The syntax to enable kerberos on an existing installation will be different depnding on the major version.
 
 ```
 gpcmdr --krbenable gpcc_43210_333_20180718130238
@@ -391,9 +372,7 @@ GPCC supports 3 different kerberos mode:
 
 Choose kerberos mode (1.normal/2.strict/3.gpmon_only): (default=1)
 
-
 Enter path to the keytab file: (default=/home/gpadmin/krb5.keytab)
-
 
 Start instance Yy/Nn (default=Y)
 
@@ -403,20 +382,19 @@ Starting instance gpcc_43210_333_20180718130238 ...
 
 - [ ] Authenticate and Test Access
 
-SPNEGO Support on various browsers and OSes may require some addtional startup parameters or tuning.
+  * SPNEGO Support on various browsers and OSes may require some addtional startup parameters or tuning.
 
-For Example on MacOS:
+  * For Example on MacOS:
+    * Safari works out of the box if you've created a Kerberos ticket as outlined in step 1; 
+    * FireFox just needs a couple settings configured on the about:config page.
+    * Chrome -- well, it's just special...I have not been able to configure it for hostname only support yet...
+      * https://www.chromium.org/developers/design-documents/http-authentication
+      * defaults write com.google.Chrome AuthServerWhitelist “*.example.com”
+      * defaults write com.google.Chrome AuthNegotiateDelegateWhitelist “*.example.com”
+      * defaults write com.google.Chrome DisableAuthNegotiateCnameLookup -bool true
+      * `chrome://policy` and refresh
 
-* Safari works out of the box if you've created a Kerberos ticket as outlined in step 1; 
-* FireFox just needs a couple settings configured on the about:config page.
-* Chrome -- well, it's just special...I have not been able to configure it for hostname only support yet...
-
-  * https://www.chromium.org/developers/design-documents/http-authentication
-  * defaults write com.google.Chrome AuthServerWhitelist “*.example.com”
-  * defaults write com.google.Chrome AuthNegotiateDelegateWhitelist “*.example.com”
-  * defaults write com.google.Chrome DisableAuthNegotiateCnameLookup -bool true
-  * `chrome://policy` and refresh
-  
+  * On The Server:
 
 ```
 gpstop -u
@@ -427,27 +405,52 @@ Password for gpmon@GREENPLUM.LOCAL:
 [gpadmin@gpdb ~]$ psql -U gpmon -h gpdb
 psql (8.2.15)
 Type "help" for help.
+```
 
-# On Host ensure resolution to Guest VMs
+  * On the Client:
+
+```
+# On Host Ensure resolution to Guest VMs
 192.168.99.100 gpdb
 192.168.99.10  greenplum.local
 
-# Keytab and krb5.conf copied locally
+defaults write com.google.Chrome AuthNegotiateDelegateWhitelist "*.GREENPLUM.LOCAL"
+defaults write com.google.Chrome AuthServerWhitelist "gpdb"
+defaults write com.google.Chrome DisableAuthNegotiateCnameLookup -bool true
+
+# Keytab and krb5.conf copied locally and authenticate using keytab.
 kinit -t krb5.gpmon.keytab gpmon@GREENPLUM.LOCAL
+
+# On launch of GPCC, you should be auto-negoticated for login:
 klist
-Credentials cache: API:E5134DFE-7329-4840-A28C-C01B1E6C3D3A
+Credentials cache: API:3B02C83B-2C36-4255-AC28-71D9C3A329A7
         Principal: gpmon@GREENPLUM.LOCAL
 
   Issued                Expires               Principal
-Jul 31 11:40:44 2018  Jul 31 21:40:44 2018  krbtgt/GREENPLUM.LOCAL@GREENPLUM.LOCAL
+Aug  1 10:58:25 2018  Aug  1 20:58:25 2018  krbtgt/GREENPLUM.LOCAL@GREENPLUM.LOCAL
+Aug  1 10:58:40 2018  Aug  1 20:58:25 2018  HTTP/gpdb@GREENPLUM.LOCAL
+```
+
+**Dealing With Clock Skew**
+
+It is important that system times on the Active Directory and Greenplum servers not be more than 5 minutes apart. It is suggested that you use Network Time Protocol (NTP) to keep the server times in sync. 
+
+On the Greenplum master you can configure this through /etc/ntp.conf, but keep in mind that the master system clock must also be synced with all of the segment hosts.
+
+See: https://gpdb.docs.pivotal.io/540/install_guide/prep_os_install_gpdb.html#topic_qst_s5t_wy
 
 ```
+[gpadmin@gpdb ~]$ psql -U samba -h gpdb
+psql: Kerberos 5 authentication rejected:  Clock skew too great
+```
+
+When there is too much clock skew with the GPCC Web client, this will generally appear as a 500 error for the `/access` url.
+
 
 # Cleanup #
 
-* Shut down the cluster with `vagrant halt` and delete it with `vagrant destroy`. 
-
-* You can always run `vagrant up` to turn on or build a brand new cluster.
+- [ ] Shut down with `vagrant halt`
+- [ ] Delete it with `vagrant destroy`.
 
 # License #
 
