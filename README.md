@@ -186,7 +186,7 @@ sudo samba-tool user create gpadmin --random-password (or set a password)
 sudo samba-tool user enable gpadmin
 
 # Add the SPN
-sudo samba-tool spn add postgresql/gpdb gpadmin
+sudo samba-tool spn add postgres/gpdb gpadmin
 sudo samba-tool spn list gpadmin
 
 User CN=gpdb_service,CN=Users,DC=greenplum,DC=local has the following servicePrincipalName:
