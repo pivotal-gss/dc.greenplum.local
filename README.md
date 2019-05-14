@@ -48,7 +48,7 @@ If you are having trouble resolving, make sure your VirtualBox network adapter i
   * `sudo samba-tool user enable samba`
 
 - [ ] Test Simple Bind: 
-  * ldapsearch is included with the OpenLDAP Clients (yum install openldap-clients)
+  * ldapsearch is included with the OpenLDAP Clients: `yum install openldap-clients`
 
 ```
 ldapsearch -x -h greenplum.local -b "dc=greenplum,dc=local" -D "CN=samba,CN=users,DC=greenplum,DC=local" -w changeme "(samAccountName=samba)" dn
