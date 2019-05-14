@@ -48,7 +48,7 @@ If you are having trouble resolving, make sure your VirtualBox network adapter i
   * `sudo samba-tool user enable samba`
 
 - [ ] Test Simple Bind: 
-  * ldapsearch is included with the OpenLDAP Clients
+  * ldapsearch is included with the OpenLDAP Clients (yum install openldap-clients)
 
 ```
 ldapsearch -x -h greenplum.local -b "dc=greenplum,dc=local" -D "CN=samba,CN=users,DC=greenplum,DC=local" -w changeme "(samAccountName=samba)" dn
@@ -157,6 +157,9 @@ Type "help" for help.
 ```
 
 # Greenplum Kerberos Example #
+
+To install packages for a Kerberos client:
+`yum install krb5-workstation krb5-libs krb5-auth-dialog`
 
 When you set up the Greenplum Database environment by sourcing the greenplum-db_path.sh script, the LD_LIBRARY_PATH environment variable is set to include the Greenplum Database lib directory, which includes Kerberos libraries. 
 
