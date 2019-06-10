@@ -144,7 +144,7 @@ result: 0 Success
 - [ ] Modify pg_hba.conf
 
 ```
-host     all         samba     0.0.0.0/0        ldap ldapserver=greenplum.local ldapbasedn="cn=users,dc=greenplum,dc=local" ldabbindnd="cn=gpadmin,cn=users,dc=greenplum,dc=local" ldapbindpasswd="changeme" ldapsearchattribute="samAccountName"
+host     all         samba     0.0.0.0/0        ldap ldapserver=greenplum.local ldapbasedn="cn=users,dc=greenplum,dc=local" ldapbinddn="cn=gpadmin,cn=users,dc=greenplum,dc=local" ldapbindpasswd="changeme" ldapsearchattribute="samAccountName"
 
 gpstop -u
 
